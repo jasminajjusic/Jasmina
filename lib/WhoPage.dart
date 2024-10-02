@@ -9,7 +9,7 @@ import 'package:uuid/uuid.dart';
 class WhoPage extends StatelessWidget {
   final double amount;
 
-  WhoPage({required this.amount});
+  WhoPage({super.key, required this.amount});
 
   final TextEditingController _nameController = TextEditingController();
 
@@ -20,10 +20,11 @@ class WhoPage extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: const Color.fromRGBO(196, 20, 166, 1), 
         elevation: 0,
-        title: Center(child: Text('MoneyApp', style: TextStyle(color: Colors.white))),
+        iconTheme: const IconThemeData(color: Colors.white),
+        title: const Center(child: Text('MoneyApp', style: TextStyle(color: Colors.white))),
         actions: [
           IconButton(
-            icon: Icon(Icons.close, color: Colors.white),
+            icon: const Icon(Icons.close, color: Colors.white), 
             onPressed: () {
               Navigator.pop(context); 
             },
@@ -35,8 +36,8 @@ class WhoPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            SizedBox(height: 80), 
-            Text(
+            const SizedBox(height: 80), 
+            const Text(
               'To whom?', 
               style: TextStyle(
                 fontSize: 24,
@@ -45,14 +46,14 @@ class WhoPage extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
-            SizedBox(height: 80),
+            const SizedBox(height: 80),
         
             Container(
-              margin: EdgeInsets.symmetric(horizontal: 40),
+              margin: const EdgeInsets.symmetric(horizontal: 40),
               child: TextField(
                 controller: _nameController,
-                style: TextStyle(color: Colors.white, fontSize: 20),
-                decoration: InputDecoration(
+                style: const TextStyle(color: Colors.white, fontSize: 20),
+                decoration: const InputDecoration(
                   hintText: '',
                   enabledBorder: UnderlineInputBorder(
                     borderSide: BorderSide(color: Colors.white), 
@@ -64,18 +65,16 @@ class WhoPage extends StatelessWidget {
                 textAlign: TextAlign.center, 
               ),
             ),
-            Spacer(), 
+            const Spacer(), 
     
-            SizedBox(
-              width: double.infinity, 
+            FractionallySizedBox(
+              widthFactor: 1 / 3,  
               child: ElevatedButton(
                 onPressed: () {
                   final String name = _nameController.text;
                   if (name.isNotEmpty) {
-      
-                    final String transactionId = Uuid().v4();
+                    final String transactionId = const Uuid().v4();
 
-          
                     final newTransaction = Transaction(
                       id: transactionId, 
                       name: name,
@@ -84,10 +83,8 @@ class WhoPage extends StatelessWidget {
                       type: 'PAYMENT',
                     );
 
-            
                     context.read<TransactionCubit>().addTransaction(newTransaction);
 
-                
                     Navigator.pushAndRemoveUntil(
                       context,
                       MaterialPageRoute(builder: (context) => TransactionsPage()), 
@@ -96,21 +93,22 @@ class WhoPage extends StatelessWidget {
                   }
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.pink[200], 
-                  padding: EdgeInsets.symmetric(vertical: 16), 
-                  shape: RoundedRectangleBorder(
-            
-                  ),
+                  backgroundColor: Colors.white.withOpacity(0.5), 
+                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 0.5), 
+                  shape: const RoundedRectangleBorder(),
                 ),
-                child: SizedBox(
-                  width: 75, 
-                  child: Center(
-                    child: Text('Pay', style: TextStyle(color: const Color.fromRGBO(196, 20, 166, 1), fontSize: 18)),
+                child: const Center(
+                  child: Text(
+                    'Pay', 
+                    style: TextStyle(
+                      color: Colors.white, 
+                      fontSize: 18,
+                    ),
                   ),
                 ),
               ),
             ),
-            SizedBox(height: 20), 
+            const SizedBox(height: 80), 
           ],
         ),
       ),

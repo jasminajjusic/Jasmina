@@ -6,20 +6,50 @@ import 'transaction_bloc.dart';
 import 'transaction_model.dart';
 import 'package:uuid/uuid.dart'; 
 
-class TopUpPage extends StatelessWidget {
-  final TextEditingController _amountController = TextEditingController();
+class TopUpPage extends StatefulWidget {
+  const TopUpPage({super.key});
 
+  @override
+  _TopUpPageState createState() => _TopUpPageState();
+}
+
+class _TopUpPageState extends State<TopUpPage> {
+  String _inputAmount = "100"; 
+  bool _hasStartedTyping = false; 
+
+  void _onKeyTapped(String value) {
+    setState(() {
+      if (!_hasStartedTyping) {
+        _inputAmount = '';  
+        _hasStartedTyping = true; 
+      }
+      
+      if (value == '⌫') {
+        if (_inputAmount.isNotEmpty) {
+          _inputAmount = _inputAmount.substring(0, _inputAmount.length - 1);
+        }
+      } else {
+        _inputAmount += value;
+      }
+    });
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color.fromRGBO(196, 20, 166, 1), 
       appBar: AppBar(
-        backgroundColor: const Color.fromRGBO(196, 20, 166, 1), 
+        backgroundColor: const Color.fromRGBO(196, 20, 166, 1),
         elevation: 0,
-        title: Center(child: Text('MoneyApp', style: TextStyle(color: Colors.white))),
+        iconTheme: const IconThemeData(color: Colors.white),
+        title: const Center(
+          child: Text(
+            'MoneyApp',
+            style: TextStyle(color: Colors.white),
+          ),
+        ),
         actions: [
           IconButton(
-            icon: Icon(Icons.close, color: Colors.white),
+            icon: const Icon(Icons.close),
             onPressed: () {
               Navigator.pop(context); 
             },
@@ -31,8 +61,8 @@ class TopUpPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            SizedBox(height: 80), 
-            Text(
+            const SizedBox(height: 80), 
+            const Text(
               'How much?', 
               style: TextStyle(
                 fontSize: 24,
@@ -41,73 +71,105 @@ class TopUpPage extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
-            SizedBox(height: 80),
-          
-            Container(
-              margin: EdgeInsets.symmetric(horizontal: 40),
-              child: TextField(
-                controller: _amountController,
-                keyboardType: TextInputType.number, 
-                style: TextStyle(color: Colors.white, fontSize: 20),
-                decoration: InputDecoration(
-                  hintText: 'Amount',
-                  hintStyle: TextStyle(color: Colors.white60),
-                  enabledBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: Colors.white), 
-                  ),
-                  focusedBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: Colors.white), 
+            const SizedBox(height: 100),
+            Text(
+              _inputAmount.isEmpty ? '£ 0.00' : '£ $_inputAmount.00',
+              style: const TextStyle(
+                fontSize: 48,
+                color: Colors.white,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            
+            const Spacer(), 
+            
+            _buildNumberPad(),
+
+            const SizedBox(height: 20), 
+            
+            FractionallySizedBox(
+              widthFactor: 1 / 3,  
+              child: ElevatedButton(
+                onPressed: () {
+                  final double amount = double.tryParse(_inputAmount) ?? 0.0;
+
+                  if (amount > 0) {
+                    final String transactionId = const Uuid().v4();
+                    final newTransaction = Transaction(
+                      id: transactionId, 
+                      name: 'Top Up',
+                      amount: amount,
+                      createdAt: DateTime.now(),
+                      type: 'TOP-UP',
+                    );
+
+                    context.read<TransactionCubit>().addTransaction(newTransaction);
+                    context.read<BalanceCubit>().topUp(amount);
+
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (context) => TransactionsPage()), 
+                      (Route<dynamic> route) => false, 
+                    );
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white.withOpacity(0.5), 
+                  padding: const EdgeInsets.symmetric(vertical: 16), 
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8), 
                   ),
                 ),
-                textAlign: TextAlign.center, 
-              ),
-            ),
-            Spacer(), 
-            ElevatedButton(
-              onPressed: () {
-                final String amountText = _amountController.text;
-                final double? amount = double.tryParse(amountText); 
-
-                if (amount != null && amount > 0) {
-          
-                  final String transactionId = Uuid().v4();
-
-                
-                  final newTransaction = Transaction(
-                    id: transactionId, 
-                    name: 'Top Up',
-                    amount: amount,
-                    createdAt: DateTime.now(),
-                    type: 'TOP-UP',
-                  );
-
-                  
-                  context.read<TransactionCubit>().addTransaction(newTransaction);
-
-          
-                  context.read<BalanceCubit>().topUp(amount);
-
-                
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (context) => TransactionsPage()), 
-                    (Route<dynamic> route) => false, 
-                  );
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.pink[200], 
-                padding: EdgeInsets.symmetric(vertical: 16), 
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8), 
+                child: const Text(
+                  'Top-up', 
+                  style: TextStyle(
+                    color: Colors.white, 
+                    fontSize: 18,
+                  ),
                 ),
               ),
-              child: Text('Top-up', style: TextStyle(color:const Color.fromRGBO(196, 20, 166, 1), fontSize: 18)),
             ),
-            SizedBox(height: 20), 
+            const SizedBox(height: 50), 
           ],
         ),
       ),
     );
   }
-}
+
+  Widget _buildNumberPad() {
+    return Column(
+      children: [
+        _buildRow(['1', '2', '3']),
+        _buildRow(['4', '5', '6']),
+        _buildRow(['7', '8', '9']),
+        _buildRow(['.', '0', '⌫']),
+      ],
+    );
+  }
+
+  Widget _buildRow(List<String> keys) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: keys.map((key) => _buildKey(key)).toList(),
+    );
+  }
+
+  Widget _buildKey(String value) {
+    return GestureDetector(
+      onTap: () => _onKeyTapped(value),
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 10),
+        child: Center(
+          child: Text(
+            value,
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.white, 
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+} 
