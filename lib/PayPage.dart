@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'WhoPage.dart'; 
 
 class PayPage extends StatefulWidget {
+  const PayPage({super.key});
+
   @override
   _PayPageState createState() => _PayPageState();
 }
@@ -34,10 +36,11 @@ class _PayPageState extends State<PayPage> {
       appBar: AppBar(
         backgroundColor: const Color.fromRGBO(196, 20, 166, 1),
         elevation: 0, 
-        title: Center(child: Text('MoneyApp', style: TextStyle(color: Colors.white))),
+        iconTheme: const IconThemeData(color: Colors.white),
+        title: const Center(child: Text('MoneyApp', style: TextStyle(color: Colors.white))),
         actions: [
           IconButton(
-            icon: Icon(Icons.close, color: Colors.white),
+            icon: const Icon(Icons.close, color: Colors.white), 
             onPressed: () {
               Navigator.pop(context); 
             },
@@ -49,31 +52,49 @@ class _PayPageState extends State<PayPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            SizedBox(height: 80),
+            const SizedBox(height: 40), 
             Column(
               children: [
-                Text(
+                const Text(
                   'How much?',
                   style: TextStyle(
                     fontSize: 24,
                     color: Colors.white,
-                    
                   ),
                 ),
-                SizedBox(height: 80),
-                Text(
-                  _inputAmount.isEmpty ? '£ 0.00' : '£ $_inputAmount.00', 
-                  style: TextStyle(
-                    fontSize: 48,
-                    color: Colors.white,
-                   
+                const SizedBox(height: 60), 
+                Text.rich(
+                  TextSpan(
+                    children: [
+                      const TextSpan(
+                        text: '£ ', 
+                        style: TextStyle(
+                          fontSize: 48,
+                          color: Colors.white,
+                        ),
+                      ),
+                      TextSpan(
+                        text: _inputAmount.isEmpty ? '0' : _inputAmount.split('.')[0],
+                        style: const TextStyle(
+                          fontSize: 48,
+                          color: Colors.white,
+                        ),
+                      ),
+                      TextSpan(
+                        text: _inputAmount.isEmpty ? '.00' : '.00', 
+                        style: const TextStyle(
+                          fontSize: 24, 
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-            Spacer(), 
+            const SizedBox(height: 20), 
             _buildNumberPad(), 
-            SizedBox(height: 40), 
+            const SizedBox(height: 20), 
             ElevatedButton(
               onPressed: () {
                 double amount = double.tryParse(_inputAmount) ?? 0.0;
@@ -86,20 +107,20 @@ class _PayPageState extends State<PayPage> {
                   );
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Please enter a valid amount')),
+                    const SnackBar(content: Text('Please enter a valid amount')),
                   );
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color.fromARGB(255, 235, 225, 228), 
-                padding: EdgeInsets.symmetric(vertical: 16, horizontal: 120),
+                backgroundColor: Colors.white.withOpacity(0.5), 
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 80),
                 shape: RoundedRectangleBorder(
-                 
+                  borderRadius: BorderRadius.circular(8), 
                 ),
               ),
-              child: Text('Next', style: TextStyle(color: const Color.fromRGBO(196, 20, 166, 1), fontSize: 18)),
+              child: const Text('Next', style: TextStyle(color: Colors.white, fontSize: 18)),
             ),
-            SizedBox(height: 20), 
+            const SizedBox(height:30),
           ],
         ),
       ),
@@ -128,11 +149,11 @@ class _PayPageState extends State<PayPage> {
     return GestureDetector(
       onTap: () => _onKeyTapped(value),
       child: Container(
-        margin: EdgeInsets.symmetric(vertical: 10),
+        margin: const EdgeInsets.symmetric(vertical: 10),
         child: Center(
           child: Text(
             value,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
               color: Colors.white, 

@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'transaction_bloc.dart';
 import 'transaction_model.dart';
-import 'PayPage.dart'; 
-import 'TopUpPage.dart'; 
+import 'PayPage.dart';
+import 'TransactionDetailsPage.dart';
+import 'TopUpPage.dart';
 
 class TransactionsPage extends StatelessWidget {
+  const TransactionsPage({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -23,18 +26,15 @@ class TransactionsPage extends StatelessWidget {
       ),
     );
   }
-
-  Widget _buildTopSection(BuildContext context) {
+ Widget _buildTopSection(BuildContext context) {
     return Stack(
       children: [
-    
         Container(
           height: 230, 
-          decoration: BoxDecoration(
-            color: const Color.fromRGBO(196, 20, 166, 1), 
+          decoration: const BoxDecoration(
+            color: Color.fromRGBO(196, 20, 166, 1), 
           ),
         ),
-      
         Column(
           children: [
             _buildHeader(),
@@ -50,7 +50,7 @@ class TransactionsPage extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.only(top: 10.0, bottom: 30.0),
       alignment: Alignment.center,
-      child: Text(
+      child: const Text(
         'MoneyApp',
         style: TextStyle(
           color: Colors.white,
@@ -62,6 +62,8 @@ class TransactionsPage extends StatelessWidget {
 }
 
 class BalanceWidget extends StatelessWidget {
+  const BalanceWidget({super.key});
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<TransactionCubit, TransactionState>(
@@ -72,14 +74,14 @@ class BalanceWidget extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
-                '£${state.balance.toStringAsFixed(2)}',
-                style: TextStyle(
+                state.balance.toStringAsFixed(2),
+                style: const TextStyle(
                   fontSize: 48,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),
               ),
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
             ],
           ),
         );
@@ -89,6 +91,8 @@ class BalanceWidget extends StatelessWidget {
 }
 
 class ActionIconsBox extends StatelessWidget {
+  const ActionIconsBox({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -104,7 +108,7 @@ class ActionIconsBox extends StatelessWidget {
               color: Colors.grey.withOpacity(0.2),
               blurRadius: 10.0,
               spreadRadius: 1.0,
-              offset: Offset(0, 5),
+              offset: const Offset(0, 5),
             ),
           ],
         ),
@@ -123,7 +127,12 @@ class ActionIconsBox extends StatelessWidget {
                 MaterialPageRoute(builder: (context) => TopUpPage()), 
               );
             }), 
-            _buildActionIcon(Icons.money, 'Loan', context),
+            _buildActionIcon(Icons.money, 'Loan', context, onTap:(){
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => TransactionDetailsPage()),
+              );
+            }),
           ],
         ),
       ),
@@ -135,11 +144,11 @@ class ActionIconsBox extends StatelessWidget {
       onTap: onTap, 
       child: Column(
         children: [
-          Icon(icon, size: 36, color:const Color.fromRGBO(196, 20, 166, 1)),
-          SizedBox(height: 4),
+          Icon(icon, size: 36, color: const Color.fromRGBO(196, 20, 166, 1)),
+          const SizedBox(height: 4),
           Text(
             label,
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
           ),
         ],
       ),
@@ -148,10 +157,13 @@ class ActionIconsBox extends StatelessWidget {
 }
 
 class TransactionsList extends StatelessWidget {
+  const TransactionsList({super.key});
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<TransactionCubit, TransactionState>(
       builder: (context, state) {
+        // Group transactions by date
         Map<String, List<Transaction>> groupedTransactions = {};
         for (var transaction in state.transactions) {
           String groupKey;
@@ -178,12 +190,10 @@ class TransactionsList extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 8.0),
                   child: Text(
                     entry.key,
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
-                ...entry.value.map((transaction) {
-                  return _buildTransactionItem(transaction);
-                }).toList(),
+                _buildGroupedTransactionItem(entry.value),
               ],
             );
           }).toList(),
@@ -192,7 +202,7 @@ class TransactionsList extends StatelessWidget {
     );
   }
 
-  Widget _buildTransactionItem(Transaction transaction) {
+  Widget _buildGroupedTransactionItem(List<Transaction> transactions) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(16.0),
@@ -204,42 +214,71 @@ class TransactionsList extends StatelessWidget {
             color: Colors.grey.withOpacity(0.1),
             blurRadius: 5.0,
             spreadRadius: 1.0,
-            offset: Offset(0, 3),
+            offset: const Offset(0, 3),
           ),
         ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
+      child: Column(
+        children: transactions.map((transaction) {
+          String amount = transaction.amount.toStringAsFixed(2);
+          String wholePart = amount.split('.')[0]; 
+          String decimalPart = amount.split('.')[1]; 
+          
+          return Column(
             children: [
-              Icon(transaction.type == 'TOP-UP' ? Icons.arrow_upward : Icons.arrow_downward,
-                  color: transaction.type == 'TOP-UP' ? Colors.green : Colors.red),
-              SizedBox(width: 10),
-              Text(
-                transaction.name,
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+
+                      Icon(Icons.local_atm, 
+                          color: transaction.type == 'TOP-UP' ? Colors.green : Colors.red),
+                      const SizedBox(width: 10),
+                      Text(
+                        transaction.name,
+                        style: const TextStyle(
+                          fontSize: 16, 
+                          fontWeight: FontWeight.bold,  
+                        ),
+                      ),
+                    ],
+                  ),
+                  Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(
+                          text: '${transaction.type == 'TOP-UP' ? '+' : '-'}$wholePart',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w500,
+                            color: transaction.type == 'TOP-UP' ? Colors.pink : Colors.black,
+                          ),
+                        ),
+                        TextSpan(
+                          text: '.$decimalPart',  
+                          style: TextStyle(
+                            fontSize: 16, 
+                            fontWeight: FontWeight.w400,
+                            color: transaction.type == 'TOP-UP' ? Colors.pink : Colors.black,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
+              const SizedBox(height: 10),  
             ],
-          ),
-          Text(
-            transaction.type == 'TOP-UP'
-                ? '+£${transaction.amount.toStringAsFixed(2)}'
-                : '-£${transaction.amount.toStringAsFixed(2)}',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: transaction.type == 'TOP-UP' ? Colors.green : Colors.red,
-            ),
-          ),
-        ],
+          );
+        }).toList(),
       ),
     );
   }
 }
 
 extension DateTimeExtensions on DateTime {
-  bool isToday() => this.year == DateTime.now().year && this.month == DateTime.now().month && this.day == DateTime.now().day;
+  bool isToday() => year == DateTime.now().year && month == DateTime.now().month && day == DateTime.now().day;
 
-  bool isYesterday() => this.year == DateTime.now().year && this.month == DateTime.now().month && this.day == DateTime.now().day - 1;
+  bool isYesterday() => year == DateTime.now().year && month == DateTime.now().month && day == DateTime.now().day - 1;
 }
