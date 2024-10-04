@@ -1,7 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'transaction_model.dart'; 
 
-
 class BalanceState {
   final double balance;
 
@@ -11,52 +10,207 @@ class BalanceState {
 class BalanceCubit extends Cubit<BalanceState> {
   BalanceCubit() : super(BalanceState(balance: 150.25));
 
-
   void updateBalance(double amount) {
     emit(BalanceState(balance: state.balance + amount));
   }
 
-  void topUp(double amount) {}
+  void topUp(double amount) {
+    updateBalance(amount);
+  }
 }
-
 
 class TransactionState {
   final double balance;
   final List<Transaction> transactions;
+  final bool repeatPayment;
 
-  TransactionState({required this.balance, required this.transactions});
+  TransactionState({
+    required this.balance,
+    required this.transactions,
+    this.repeatPayment = false,
+  });
+
+  TransactionState copyWith({
+    double? balance,
+    List<Transaction>? transactions,
+    bool? repeatPayment,
+  }) {
+    return TransactionState(
+      balance: balance ?? this.balance,
+      transactions: transactions ?? this.transactions,
+      repeatPayment: repeatPayment ?? this.repeatPayment,
+    );
+  }
+}
+abstract class TransactionEvent {}
+
+class LoanApprovedEvent extends TransactionEvent {
+  final String loanName;
+  final double amount;
+
+  LoanApprovedEvent({required this.loanName, required this.amount});
 }
 
-
 class TransactionCubit extends Cubit<TransactionState> {
-  TransactionCubit() : super(TransactionState(balance: 150.25, transactions: []));
+  final BalanceCubit balanceCubit;
+
+  TransactionCubit(this.balanceCubit)
+      : super(TransactionState(
+          balance: balanceCubit.state.balance,
+          transactions: [],
+        ));
 
   void loadTransactions() {
     List<Transaction> transactions = [
-      Transaction(id: '1', name: 'Groceries', amount: 20.0, createdAt: DateTime.now(), type: 'PAYMENT'),
-      Transaction(id: '2', name: 'Top Up', amount: 50.0, createdAt: DateTime.now().subtract(Duration(days: 1)), type: 'TOP-UP'),
-      Transaction(id: '3', name: 'Gas', amount: 30.0, createdAt: DateTime.now().subtract(Duration(days: 1)), type: 'PAYMENT'),
-      Transaction(id: '4', name: 'Top Up', amount: 100.0, createdAt: DateTime.now().subtract(Duration(days: 2)), type: 'TOP-UP'),
+      Transaction(
+        id: '1',
+        name: 'Groceries',
+        amount: 20.0,
+        createdAt: DateTime.now(),
+        type: 'PAYMENT',
+      ),
+      Transaction(
+        id: '2',
+        name: 'Top Up',
+        amount: 50.0,
+        createdAt: DateTime.now().subtract(const Duration(days: 1)),
+        type: 'TOP-UP',
+      ),
+      Transaction(
+        id: '3',
+        name: 'Gas',
+        amount: 30.0,
+        createdAt: DateTime.now().subtract(const Duration(days: 1)),
+        type: 'PAYMENT',
+      ),
     ];
 
-  
     emit(TransactionState(balance: state.balance, transactions: transactions));
   }
 
-  
   void addTransaction(Transaction transaction) {
-    
-    final updatedTransactions = List<Transaction>.from(state.transactions)..add(transaction);
-
+    final updatedTransactions = List<Transaction>.from(state.transactions)
+      ..add(transaction);
 
     double updatedBalance = state.balance;
     if (transaction.type == 'PAYMENT') {
-      updatedBalance -= transaction.amount; 
+      updatedBalance -= transaction.amount;
     } else if (transaction.type == 'TOP-UP') {
-      updatedBalance += transaction.amount; 
+      updatedBalance += transaction.amount;
     }
 
+    balanceCubit.updateBalance(
+        transaction.type == 'TOP-UP' ? transaction.amount : -transaction.amount);
+
+    emit(TransactionState(
+      balance: updatedBalance,
+      transactions: updatedTransactions,
+    ));
+  }
+
+  void addLoanTransaction(double amount) {
+    final loanTransaction = Transaction(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      name: 'Loan Approved',
+      amount: amount,
+      createdAt: DateTime.now(),
+      type: 'LOAN', 
+    );
+
+    final updatedTransactions = List<Transaction>.from(state.transactions)
+      ..add(loanTransaction);
+
+    double updatedBalance = state.balance + amount; 
+
   
-    emit(TransactionState(balance: updatedBalance, transactions: updatedTransactions));
+    balanceCubit.updateBalance(amount);
+
+    emit(TransactionState(
+      balance: updatedBalance,
+      transactions: updatedTransactions,
+    ));
+  }
+
+  void splitTheBill(Transaction transaction) {
+    if (transaction.type == 'PAYMENT') {
+      final newTransaction = Transaction(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        name: 'Split Bill: ${transaction.name}',
+        amount: transaction.amount / 2,
+        createdAt: DateTime.now(),
+        type: 'TOP-UP',
+      );
+
+      final updatedTransactions = List<Transaction>.from(state.transactions)
+        ..remove(transaction)
+        ..add(transaction.copyWith(amount: transaction.amount / 2))
+        ..add(newTransaction);
+
+      balanceCubit.updateBalance(newTransaction.amount);
+
+      emit(TransactionState(
+        balance: state.balance + newTransaction.amount,
+        transactions: updatedTransactions,
+      ));
+    }
+  }
+
+  void toggleRepeatPayment() {
+    final lastTransaction =
+        state.transactions.isNotEmpty ? state.transactions.last : null;
+
+    if (lastTransaction != null && lastTransaction.type == 'PAYMENT') {
+      if (!state.repeatPayment) {
+  
+        final repeatedTransaction = Transaction(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          name: lastTransaction.name,
+          amount: lastTransaction.amount,
+          createdAt: DateTime.now(),
+          type: lastTransaction.type,
+        );
+
+    
+        final updatedTransactions = List<Transaction>.from(state.transactions)
+          ..add(repeatedTransaction);
+
+        
+        double updatedBalance = state.balance - lastTransaction.amount;
+
+        balanceCubit.updateBalance(-lastTransaction.amount);
+
+        emit(state.copyWith(
+          balance: updatedBalance,
+          transactions: updatedTransactions,
+          repeatPayment: true,
+        ));
+      } else {
+        emit(state.copyWith(repeatPayment: false));
+      }
+    }
+  }
+
+  void addRepeatedTransaction(Transaction transaction) {
+    if (state.repeatPayment && transaction.type == 'PAYMENT') {
+      final repeatedTransaction = Transaction(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        name: transaction.name,
+        amount: transaction.amount,
+        createdAt: DateTime.now(),
+        type: 'PAYMENT',
+      );
+
+      final updatedTransactions = List<Transaction>.from(state.transactions)
+        ..add(repeatedTransaction);
+
+      double updatedBalance = state.balance - repeatedTransaction.amount;
+
+      balanceCubit.updateBalance(-repeatedTransaction.amount);
+
+      emit(TransactionState(
+        balance: updatedBalance,
+        transactions: updatedTransactions,
+      ));
+    }
   }
 }
